@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+"""A tool to determine errors in compliance with:
+https://sites.google.com/a/pdx.edu/oit-cis/cis/policies/cis-operations-policy
+"""
+
+import optparse
+
+
+def main():
+    pass
+
+if __name == "__main__":
+   main() 
