@@ -7,6 +7,7 @@ import logging
 import yaml
 from time import strptime, strftime, localtime, mktime
 from datetime import datetime, date, timedelta
+from termcolor import colored
 
 import rtclient
 
@@ -54,10 +55,14 @@ class Ticket(object):
         deadline = last_active + slow
         needs = self.adj2needs[activity_attr].format(self)
         details = (self, deadline, needs)
+        ticktxt = colored("rt#{0.ticket_id} ", 'white', attrs=['bold'])
+        needs = colored('{2}', 'white')
         if deadline > datetime.now():
-            msg = "On Time {1}: rt#{0.ticket_id}, {2}"
+            status = colored("On Time {1}: ", 'green')
         else:
-            msg = "Overdue {1}: rt#{0.ticket_id}, {2}"
+            needs = colored('{2}', 'magenta', attrs=['underline'])
+            status = colored("Overdue {1}: ", 'red')
+        msg = status + ticktxt + needs
         return msg.format(*details)
 
 def main():
