@@ -1,0 +1,24 @@
+url: https://example.com/NoAuth-REST/1.0
+creds:
+    user: foo
+    pass: barbar
+
+queues:
+    - cis-unix
+    - cis-windows
+    - cis-csa
+    - cis-io
+
+# all units in hours
+states:
+    # parameters for new tickets
+    new:
+        created:
+            fast: 1
+            slow: 4
+
+    # parameters for opened tickets
+    open:
+        updated:
+            fast: 8
+            slow: 40
