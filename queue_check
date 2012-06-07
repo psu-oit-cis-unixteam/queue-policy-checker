@@ -1,0 +1,78 @@
+#!/usr/bin/env python
+"""A tool to determine errors in compliance with:
+https://sites.google.com/a/pdx.edu/oit-cis/cis/policies/cis-operations-policy
+"""
+
+import logging
+import yaml
+from time import strptime, strftime, localtime, mktime
+from datetime import datetime, date, timedelta
+
+import rtclient
+
+RT_URL = "https://example.com/NoAuth-REST/1.0"
+RT_SEARCH_TIME = "%Y-%m-%d %H:%M:%S"
+NOW = date.strftime(datetime.now(), RT_SEARCH_TIME)
+TICKET_TIME = '%a %b %d %H:%M:%S %Y'
+
+class Ticket(object):
+    adj2needs = {
+                'created': 'needs update from {0.queue} POC',
+                'updated': 'needs checkin from customer or {0.queue} POC',
+                }
+
+    def __init__(self, ticket_id, creds, url):
+        self.ticket_id = ticket_id
+        self.ticket_dict = rtclient.get(ticket_id, creds, url)
+        
+        # copy the pertinent details up a level
+        self.created = self.ticket_dict['Created']
+        self.queue   = self.ticket_dict['Queue']
+        self.status  = self.ticket_dict['Status']
+        self.subject = self.ticket_dict['Subject']
+        self.updated = self.ticket_dict['LastUpdated']
+        for timetype in ['updated', 'created']:
+            time = getattr(self, timetype)
+            time = mktime(strptime(time, TICKET_TIME))
+            setattr(self, timetype, datetime.fromtimestamp(time))
+
+    def __str__(self):
+        return '{0.ticket_id}: {0.subject}'.format(self)
+
+    def health(self, policy):
+        try:
+            # our own copy of the policy!
+            state_policy = policy[self.status.lower()].copy()
+        except KeyError:
+            logging.info("No '{0.status}' policy specified, skipping.".format(self))
+            return None
+
+        # what standard are we holding this ticket to?
+        activity_attr, speeds = state_policy.popitem()
+        last_active = getattr(self, activity_attr)
+        fast, slow = [timedelta(hours=speeds[n]) for n in speeds.iterkeys()]
+        deadline = last_active + slow
+        needs = self.adj2needs[activity_attr].format(self)
+        details = (self, deadline, needs)
+        if deadline > datetime.now():
+            msg = "On Time {1}: rt#{0.ticket_id}, {2}"
+        else:
+            msg = "Overdue {1}: rt#{0.ticket_id}, {2}"
+        return msg.format(*details)
+
+def main():
+    with open('config.yaml', 'rb') as config_file:
+        config = yaml.load(config_file)
+    
+    for queue in config['queues']:
+        # get all the non-exempt tickets from all queues
+        query = "Queue = '{0}' AND Status != 'resolved' AND Status != 'rejected'".format(queue)
+        for ticket in rtclient.search(query, config['creds'], config['url']):
+            ticket_n, _ = ticket
+            aticket = Ticket(ticket_n, config['creds'], config['url'])
+            ticket_health = aticket.health(config['states'])
+            if ticket_health:
+                print ticket_health
+
+if __name__ == "__main__":
+   main() 
