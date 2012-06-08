@@ -14,9 +14,7 @@ from os import path
 
 import rtclient
 
-RT_URL = "https://example.com/NoAuth-REST/1.0"
 RT_SEARCH_TIME = "%Y-%m-%d %H:%M:%S"
-NOW = date.strftime(datetime.now(), RT_SEARCH_TIME)
 TICKET_TIME = '%a %b %d %H:%M:%S %Y'
 
 class Ticket(object):
