@@ -22,3 +22,8 @@ states:
         updated:
             fast: 8
             slow: 40
+
+# don't analyze tickets with these states
+skip_states:
+    - resolved
+    - rejected

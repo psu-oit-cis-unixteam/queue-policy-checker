@@ -70,23 +70,35 @@ def check(param_path, who=False):
     logging.debug('Opening: %s, uid=%s', param_path, who)
     with open(param_path, 'rb') as param_file:
         config = yaml.load(param_file)
-   
-    if who:
-        who_query = ' AND Owner = "{}"'.format(who)
-    else:
-        who_query = ''
+  
+    query = dict()
 
-    for queue in config['queues']:
-        # get all the non-exempt tickets from all queues
-        query = "Queue = '{0}' AND Status != 'resolved' AND Status != 'rejected'{1}".format(queue, who_query)
-        logging.info('Running query: %s', query)
-        for ticket in rtclient.search(query, config['creds'], config['url']):
-            logging.info('Got ticket=%s subject="%s"', *ticket)
-            ticket_n, _ = ticket
-            aticket = Ticket(ticket_n, config['creds'], config['url'])
-            ticket_health = aticket.health(config['states'])
-            if ticket_health:
-                print ticket_health
+    # build the owner constraints
+    if who:
+        query['who'] = 'Owner = "{}"'.format(who)
+    else:
+        query['who'] = ''
+
+    # build the queue constraints
+    queues = ['Queue = "{}"'.format(queue) for queue in config['queues']]
+    query['queue'] = ' or '.join(queues)
+
+    # build statuses
+    skip_statuses = ['Status != "{}"'.format(status)
+                    for status in config['skip_states']]
+    query['skip_states'] = ' and '.join(skip_statuses)
+
+    # get all tickets with applicable statuses from all applicable queues
+    query = "{queue} and {skip_states} and {who}".format(**query)
+    
+    logging.info('Running query: %s', query)
+    for ticket in rtclient.search(query, config['creds'], config['url']):
+        logging.info('Got ticket=%s subject="%s"', *ticket)
+        ticket_n, _ = ticket
+        aticket = Ticket(ticket_n, config['creds'], config['url'])
+        ticket_health = aticket.health(config['states'])
+        if ticket_health:
+            print ticket_health
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
