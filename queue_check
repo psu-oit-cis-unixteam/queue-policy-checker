@@ -75,7 +75,7 @@ def check(param_path, who=False):
 
     # build the owner constraints
     if who:
-        query['who'] = 'Owner = "{}"'.format(who)
+        query['who'] = 'and Owner = "{}"'.format(who)
     else:
         query['who'] = ''
 
@@ -89,7 +89,7 @@ def check(param_path, who=False):
     query['skip_states'] = ' and '.join(skip_statuses)
 
     # get all tickets with applicable statuses from all applicable queues
-    query = "{queue} and {skip_states} and {who}".format(**query)
+    query = "{queue} and {skip_states} {who}".format(**query)
     
     logging.info('Running query: %s', query)
     for ticket in rtclient.search(query, config['creds'], config['url']):
