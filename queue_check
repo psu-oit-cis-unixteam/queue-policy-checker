@@ -84,7 +84,7 @@ def check(param_path, who=False):
         logging.info('Running query: %s', query)
         for ticket in rtclient.search(query, config['creds'], config['url']):
             logging.info('Got ticket=%s subject="%s"', *ticket)
-            ticket_n, subject = ticket
+            ticket_n, _ = ticket
             aticket = Ticket(ticket_n, config['creds'], config['url'])
             ticket_health = aticket.health(config['states'])
             if ticket_health:
