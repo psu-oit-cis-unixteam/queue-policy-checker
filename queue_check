@@ -25,7 +25,7 @@ class Ticket(object):
                 'updated': 'needs checkin from customer or {0.queue} POC',
                 }
 
-    def __init__(self, ticket_id, creds, url):
+    def __init__(self, ticket_id, creds, url, states):
         self.ticket_id = ticket_id
         self.ticket_dict = rtclient.get(ticket_id, creds, url)
         
@@ -35,28 +35,44 @@ class Ticket(object):
         self.status  = self.ticket_dict['Status']
         self.subject = self.ticket_dict['Subject']
         self.updated = self.ticket_dict['LastUpdated']
+        
+        # cast the time fields to usable types
         for timetype in ['updated', 'created']:
             time = getattr(self, timetype)
             time = mktime(strptime(time, TICKET_TIME))
             setattr(self, timetype, datetime.fromtimestamp(time))
+        
+        try:
+            # a copy of whatever policy is applicable to this ticket's status
+            self.policy = states[self.status.lower()].copy()
+        except KeyError:
+            self.policy = False
+            logging.info("No '{0.status}' policy specified.".format(self))
 
     def __str__(self):
         return '{0.ticket_id}: {0.subject}'.format(self)
+    
+    @property
+    def age(self):
+        pass
 
-    def health(self, policy):
+    def health(self):
         """Perform some date math and return a pretty status string."""
-        try:
-            # our own copy of the policy!
-            state_policy = policy[self.status.lower()].copy()
-        except KeyError:
-            logging.info("No '{0.status}' policy specified.".format(self))
+        if not self.policy:
             return None
 
         # what standard are we holding this ticket to?
-        activity_attr, speeds = state_policy.popitem()
+        activity_attr, speeds = self.policy.popitem()
+        # last activity is judged by the LastUpdated or Created or other attrs
         last_active = getattr(self, activity_attr)
+        # what is fast and what is slow? casts config vals to time deltas
         fast, slow = [timedelta(hours=speeds[n]) for n in speeds.iterkeys()]
+
+        # we aspire to be done before this goal
+        goal = last_active + fast
+        # we ought to be done before this one
         deadline = last_active + slow
+
         needs = self.adj2needs[activity_attr].format(self)
         details = (self, deadline, needs)
         ticktxt = colored("rt#{0.ticket_id} ", 'white', attrs=['bold'])
@@ -100,8 +116,8 @@ def check(param_path, who=False):
     for ticket in rtclient.search(query, config['creds'], config['url']):
         logging.info('Got ticket=%s subject="%s"', *ticket)
         ticket_n, _ = ticket
-        aticket = Ticket(ticket_n, config['creds'], config['url'])
-        ticket_health = aticket.health(config['states'])
+        aticket = Ticket(ticket_n, config['creds'], config['url'], config['states'])
+        ticket_health = aticket.health()
         if ticket_health:
             print ticket_health
 
