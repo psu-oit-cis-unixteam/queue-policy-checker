@@ -3,11 +3,14 @@
 https://sites.google.com/a/pdx.edu/oit-cis/cis/policies/cis-operations-policy
 """
 
+import argparse
 import logging
 import yaml
+from getpass import getuser
 from time import strptime, strftime, localtime, mktime
 from datetime import datetime, date, timedelta
 from termcolor import colored
+from os import path
 
 import rtclient
 
@@ -65,19 +68,58 @@ class Ticket(object):
         msg = status + ticktxt + needs
         return msg.format(*details)
 
-def main():
-    with open('config.yaml', 'rb') as config_file:
-        config = yaml.load(config_file)
-    
+def check(param_path, who=False):
+    logging.debug('Opening: %s, uid=%s', param_path, who)
+    with open(param_path, 'rb') as param_file:
+        config = yaml.load(param_file)
+   
+    if who:
+        who_query = ' AND Owner = "{}"'.format(who)
+    else:
+        who_query = ''
+
     for queue in config['queues']:
         # get all the non-exempt tickets from all queues
-        query = "Queue = '{0}' AND Status != 'resolved' AND Status != 'rejected'".format(queue)
+        query = "Queue = '{0}' AND Status != 'resolved' AND Status != 'rejected'{1}".format(queue, who_query)
+        logging.info('Running query: %s', query)
         for ticket in rtclient.search(query, config['creds'], config['url']):
-            ticket_n, _ = ticket
+            logging.info('Got ticket=%s subject="%s"', *ticket)
+            ticket_n, subject = ticket
             aticket = Ticket(ticket_n, config['creds'], config['url'])
             ticket_health = aticket.health(config['states'])
             if ticket_health:
                 print ticket_health
 
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+
+    # default config path
+    default_config = path.join(path.curdir, 'config.yaml')
+    parser.add_argument('-p', '--paramfile', dest='param_path',
+                        default=default_config,
+                        help="Parameter file, default: %(default)s")
+
+    parser.add_argument('-v', dest='verbosity', action='store_const',
+                        const=logging.INFO, help='Verbose.')
+    parser.add_argument('-vv', dest='verbosity', action='store_const',
+                        const=logging.DEBUG, help='Very verbose.')
+
+    who = parser.add_mutually_exclusive_group()
+#    who.add_argument('--everyone', dest='who', action='store_false',
+#        help='Check tickets owned by everyone.')
+    who.add_argument('--me', dest='who', action='store_const', const=getuser(),
+        help='Check tickets owned by %(const)s')
+    who.add_argument('--who', dest='who', action='store', default='Nobody',
+        help='Examine tickets owned by someone, default: %(default)s')
+    
+    args = parser.parse_args()
+    
+    logging.basicConfig(
+        format='[%(levelname)s] %(asctime)s: %(message)s',
+        level=args.verbosity
+    )
+
+    check(args.param_path, args.who)
+
 if __name__ == "__main__":
-   main() 
+    main()
