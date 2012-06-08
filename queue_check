@@ -26,6 +26,8 @@ class Ticket(object):
                 }
 
     def __init__(self, ticket_id, creds, url, states):
+        self._age = None
+
         self.ticket_id = ticket_id
         self.ticket_dict = rtclient.get(ticket_id, creds, url)
         
@@ -48,41 +50,46 @@ class Ticket(object):
         except KeyError:
             self.policy = False
             logging.info("No '{0.status}' policy specified.".format(self))
+        
+        # what standard are we holding this ticket to?
+        activity_attr, self.speeds = self.policy.popitem()
+        
+        # last activity is judged by the LastUpdated or Created or other attrs
+        self.last_active = getattr(self, activity_attr)
+        
+        # and it needs?
+        self.needs = self.adj2needs[activity_attr].format(self)
 
     def __str__(self):
-        return '{0.ticket_id}: {0.subject}'.format(self)
+        return '{0.ticket_id}: {0.subject}, {0.age}'.format(self)
     
     @property
     def age(self):
-        pass
+        return datetime.now() - self.last_active
 
     def health(self):
         """Perform some date math and return a pretty status string."""
-        if not self.policy:
-            return None
-
-        # what standard are we holding this ticket to?
-        activity_attr, speeds = self.policy.popitem()
-        # last activity is judged by the LastUpdated or Created or other attrs
-        last_active = getattr(self, activity_attr)
         # what is fast and what is slow? casts config vals to time deltas
-        fast, slow = [timedelta(hours=speeds[n]) for n in speeds.iterkeys()]
+        fast, slow = [timedelta(hours=self.speeds[n])
+                     for n in self.speeds.iterkeys()]
 
         # we aspire to be done before this goal
-        goal = last_active + fast
+        goal = self.last_active + fast
         # we ought to be done before this one
-        deadline = last_active + slow
+        deadline = self.last_active + slow
 
-        needs = self.adj2needs[activity_attr].format(self)
-        details = (self, deadline, needs)
-        ticktxt = colored("rt#{0.ticket_id} ", 'white', attrs=['bold'])
-        needs = colored('{2}', 'white')
+        details = (self, deadline)
+
+        ticktxt = colored(str(self), 'white', attrs=['bold'])
+        needs = colored('{0.needs}', 'white')
+        
         if deadline > datetime.now():
             status = colored("On Time {1}: ", 'green')
         else:
-            needs = colored('{2}', 'magenta', attrs=['underline'])
+            needs = colored('{0.needs}', 'magenta', attrs=['underline'])
             status = colored("Overdue {1}: ", 'red')
-        msg = status + ticktxt + needs
+        
+        msg = status + ticktxt + ' ' + needs
         return msg.format(*details)
 
 def check(param_path, who=False):
