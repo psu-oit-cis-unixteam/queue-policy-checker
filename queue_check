@@ -50,9 +50,13 @@ class Ticket(object):
         except KeyError:
             self.policy = False
             logging.info("No '{0.status}' policy specified.".format(self))
+
+        # default for activity_Attr...
+        activity_attr = 'updated'
         
         # what standard are we holding this ticket to?
-        activity_attr, self.speeds = self.policy.popitem()
+        if isinstance(self.policy, dict):
+            activity_attr, self.speeds = self.policy.popitem()
         
         # last activity is judged by the LastUpdated or Created or other attrs
         self.last_active = getattr(self, activity_attr)
@@ -69,6 +73,9 @@ class Ticket(object):
 
     def health(self):
         """Perform some date math and return a pretty status string."""
+        if not isinstance(self.policy, dict):
+            return "No policy specified for: {0}".format(self)
+
         # what is fast and what is slow? casts config vals to time deltas
         fast, slow = [timedelta(hours=self.speeds[n])
                      for n in self.speeds.iterkeys()]
