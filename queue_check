@@ -125,7 +125,7 @@ class Ticket(object):
             return "No policy specified for: {0}".format(self)
 
         details = (self, self.deadline)
-        #print 'self.deadline: {0}'.format(self.deadline.days) #debug
+        logging.info('self.deadline: %s', self.deadline)
 
         ticktxt = colored(str(self), 'white', attrs=['bold'])
         needs = colored('{0.needs}', 'white')
@@ -137,13 +137,13 @@ class Ticket(object):
             if self.waiting == waiting.CUSTOMER:
                 #if we're already in a stalled state print in blue
                 if self.status == 'stalled':
-                    print 'float(age.days): {0}'.format(float(self.age.days)) #debug
+                    logging.info('float(self.age.days): %s', str(self.age.days))
                     if float(self.age.days) < (self.speeds['slow']/24.0):
                         status = colored("Waiting on Customer (ticket stalled) {1}: ",'yellow')
                     else:
                         status = colored("Ticket should be expired {1}: ",'grey')
                 else:
-                    print 'float(age.days): {0}'.format(float(self.age.days)) #debug
+                    logging.info('self.age.days: %s', str(self.age.days))
                     if self.age.total_seconds() < self.speeds['slow']*60*60:
                         status = colored("Waiting on Customer {1}: ",'blue')
                     else:
@@ -200,8 +200,6 @@ def check(param_path, who=False):
     query = "{who} ({queue}) and ({skip_states})".format(**query)
     
     logging.info('Running query: %s', query)
-    
-    print 'query: ' + str(query) #debug
 
     for ticket in rtclient.search(query, config['creds'], config['url']):
         logging.info('Got ticket=%s subject="%s"', *ticket)
