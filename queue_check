@@ -27,8 +27,6 @@ class Ticket(object):
                 }
 
     def __init__(self, ticket_id, creds, url, states):
-        #self._age = None is line needed? attr never used
-
         self.ticket_id = ticket_id
         self.ticket_dict = rtclient.get(ticket_id, creds, url)
         
