@@ -13,13 +13,10 @@ from termcolor import colored
 from os import path
 
 import rtclient
+import waiting
 
 RT_SEARCH_TIME = "%Y-%m-%d %H:%M:%S"
 TICKET_TIME = '%a %b %d %H:%M:%S %Y'
-
-class Waiting:
-    CUSTOMER = 0
-    STAFF    = 1
 
 class Ticket(object):
     """Describes a ticket and it's freshness"""
@@ -119,10 +116,10 @@ class Ticket(object):
                 not_found = False
         #if the owner's name is in the non-empty line, then we are waiting on the customer
         if self.owner in meaningful_line:
-            return Waiting.CUSTOMER
+            return waiting.CUSTOMER
         #otherwise we're waiting on staff
         else:
-            return Waiting.STAFF
+            return waiting.STAFF
 
     def health(self):
         """Perform some date math and return a pretty status string."""
@@ -139,7 +136,7 @@ class Ticket(object):
         if not self.overdue:
             status = colored("On Time {1}: ", 'green')
         else:
-            if self.waiting == Waiting.CUSTOMER:
+            if self.waiting == waiting.CUSTOMER:
                 #if we're already in a stalled state print in blue
                 if self.status == 'stalled':
                     print 'float(age.days): {0}'.format(float(self.age.days)) #debug
