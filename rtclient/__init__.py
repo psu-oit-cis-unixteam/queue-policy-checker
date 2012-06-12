@@ -39,7 +39,9 @@ def split_response(rt_response):
         logging.info("RT: response='%s'", message)
         return message
     else:
-        raise Exception("RT: {0}".format(str(response[0])))
+        print '\n'.join(response)
+        raise Exception("RT: {0}".format(str(response)))
+        #raise Exception("RT: {0}".format(str(response[0])))
 
 
 def comment(ticket, text, credentials, url):
@@ -102,3 +104,8 @@ def get(ticket, credentials, url):
         if key != '':
             whole_ticket[key] = value
     return whole_ticket
+
+def history(ticket, credentials, url):
+    url = "{0}/ticket/{1}/history".format(url, ticket)
+    response = requests.post(url, data=credentials)
+    return response
