@@ -17,6 +17,10 @@ import rtclient
 RT_SEARCH_TIME = "%Y-%m-%d %H:%M:%S"
 TICKET_TIME = '%a %b %d %H:%M:%S %Y'
 
+class Waiting:
+    CUSTOMER = 0
+    STAFF    = 1
+
 class Ticket(object):
     """Describes a ticket and it's freshness"""
 
@@ -26,7 +30,7 @@ class Ticket(object):
                 }
 
     def __init__(self, ticket_id, creds, url, states):
-        self._age = None
+        #self._age = None is line needed? attr never used
 
         self.ticket_id = ticket_id
         self.ticket_dict = rtclient.get(ticket_id, creds, url)
@@ -37,13 +41,16 @@ class Ticket(object):
         self.status  = self.ticket_dict['Status']
         self.subject = self.ticket_dict['Subject']
         self.updated = self.ticket_dict['LastUpdated']
-        
+        self.owner   = self.ticket_dict['Owner']
+        self.creds   = creds
+        self.url     = url
+
         # cast the time fields to usable types
         for timetype in ['updated', 'created']:
             time = getattr(self, timetype)
             time = mktime(strptime(time, TICKET_TIME))
             setattr(self, timetype, datetime.fromtimestamp(time))
-        
+
         try:
             # a copy of whatever policy is applicable to this ticket's status
             self.policy = states[self.status.lower()].copy()
@@ -57,7 +64,7 @@ class Ticket(object):
         # what standard are we holding this ticket to?
         if isinstance(self.policy, dict):
             activity_attr, self.speeds = self.policy.popitem()
-        
+
         # last activity is judged by the LastUpdated or Created or other attrs
         self.last_active = getattr(self, activity_attr)
         
@@ -65,36 +72,90 @@ class Ticket(object):
         self.needs = self.adj2needs[activity_attr].format(self)
 
     def __str__(self):
-        return '{0.ticket_id}: {0.subject}, {0.age}'.format(self)
+        return '{0.ticket_id}: {0.subject}, {0.age}. Status: {0.status}'.format(self)
+        #return '{0.ticket_id}: {0.subject}, {0.age}'.format(self)
     
     @property
     def age(self):
+        '''get the age when requested'''
         return datetime.now() - self.last_active
+
+    @property
+    def overdue(self):
+        '''check if it's overdue at the moment'''
+        if self.deadline < datetime.now():
+            return True
+        else:
+            return False
+
+    @property
+    def deadline(self):
+        '''get the deadline for the ticket'''
+        # what is fast and what is slow? casts config vals to time deltas
+        fast, slow = [timedelta(hours=self.speeds[n])
+                     for n in self.speeds.iterkeys()]
+        # we ought to be done before this one
+        deadline = self.last_active + slow
+        return deadline
+
+    @property
+    def waiting(self):
+        '''waiting will look at the ticket's history and compare to the owner of the ticket;
+        if they're different, then it will be assumed that we are waiting on the owner.'''
+        #query the ticket's history and split on newlines
+        history = rtclient.history(self.ticket_id, self.creds, self.url).text
+        hist_lines = history.split('\n')
+
+        #iterate backwards from the end of the history till you get to the first line that
+        #isn't empty
+        not_found = True
+        reverse_counter = -1
+        meaningful_line = ''
+        while not_found:
+            if hist_lines[reverse_counter] == '':
+                reverse_counter -= 1
+            else:
+                meaningful_line = hist_lines[reverse_counter]
+                not_found = False
+        #if the owner's name is in the non-empty line, then we are waiting on the customer
+        if self.owner in meaningful_line:
+            return Waiting.CUSTOMER
+        #otherwise we're waiting on staff
+        else:
+            return Waiting.STAFF
 
     def health(self):
         """Perform some date math and return a pretty status string."""
         if not isinstance(self.policy, dict):
             return "No policy specified for: {0}".format(self)
 
-        # what is fast and what is slow? casts config vals to time deltas
-        fast, slow = [timedelta(hours=self.speeds[n])
-                     for n in self.speeds.iterkeys()]
-
-        # we aspire to be done before this goal
-        goal = self.last_active + fast
-        # we ought to be done before this one
-        deadline = self.last_active + slow
-
-        details = (self, deadline)
+        details = (self, self.deadline)
+        #print 'self.deadline: {0}'.format(self.deadline.days) #debug
 
         ticktxt = colored(str(self), 'white', attrs=['bold'])
         needs = colored('{0.needs}', 'white')
         
-        if deadline > datetime.now():
+        #if deadline > datetime.now():
+        if not self.overdue:
             status = colored("On Time {1}: ", 'green')
         else:
-            needs = colored('{0.needs}', 'magenta', attrs=['underline'])
-            status = colored("Overdue {1}: ", 'red')
+            if self.waiting == Waiting.CUSTOMER:
+                #if we're already in a stalled state print in blue
+                if self.status == 'stalled':
+                    print 'float(age.days): {0}'.format(float(self.age.days)) #debug
+                    if float(self.age.days) < (self.speeds['slow']/24.0):
+                        status = colored("Waiting on Customer (ticket stalled) {1}: ",'yellow')
+                    else:
+                        status = colored("Ticket should be expired {1}: ",'grey')
+                else:
+                    print 'float(age.days): {0}'.format(float(self.age.days)) #debug
+                    if self.age.total_seconds() < self.speeds['slow']*60*60:
+                        status = colored("Waiting on Customer {1}: ",'blue')
+                    else:
+                        status = colored("Should be moved to 'stalled' status {1}: ",'cyan')
+            else: 
+                needs = colored('{0.needs}', 'magenta', attrs=['underline'])
+                status = colored("Overdue {1}: ", 'red')
         
         msg = status + ticktxt + ' ' + needs
         return msg.format(*details)
@@ -108,11 +169,28 @@ def check(param_path, who=False):
   
     query = dict()
 
-    # build the owner constraints
+    # build the owner constraints. Command line supercedes conf file
     if who:
-        query['who'] = 'and Owner = "{}"'.format(who)
+        query['who'] = 'Owner = "{}" and '.format(who)
+    #otherwise, it will go to the conf and look for 'owner'
     else:
-        query['who'] = ''
+        #check if present and not empty in conf
+        if 'owner' in config.keys() and not config['owner'] is None:
+            #for multiple entries, format queries and concatenate
+            if type(config['owner']) == list:
+                owners = ['Owner = "{}"'.format(user)
+                        for user in config['owner']]
+                query['who'] = '(' + ' or '.join(owners) + ') and '
+            #for single entry
+            elif type(config['owner']) == str:
+                query['who'] = 'Owner = "{}" and '.format(config['owner'])
+        #if its not there or empty, then empty string
+        else:
+            query['who'] = ''
+
+    #an error for no queues in the config
+    if len(config['queues']) == 0:
+        raise Exception('Error! No queues indicated in config file.')
 
     # build the queue constraints
     queues = ['Queue = "{}"'.format(queue) for queue in config['queues']]
@@ -124,9 +202,12 @@ def check(param_path, who=False):
     query['skip_states'] = ' and '.join(skip_statuses)
 
     # get all tickets with applicable statuses from all applicable queues
-    query = "{queue} and {skip_states} {who}".format(**query)
+    query = "{who} ({queue}) and ({skip_states})".format(**query)
     
     logging.info('Running query: %s', query)
+    
+    print 'query: ' + str(query) #debug
+
     for ticket in rtclient.search(query, config['creds'], config['url']):
         logging.info('Got ticket=%s subject="%s"', *ticket)
         ticket_n, _ = ticket
@@ -157,9 +238,12 @@ def main():
         help='Check tickets owned by %(const)s')
     who.add_argument('--who', dest='who', action='store', default='Nobody',
         help='Examine tickets owned by someone, default: %(default)s')
-    
+
     args = parser.parse_args()
-    
+
+    if args.who is None:
+        pass
+
     logging.basicConfig(
         format='[%(levelname)s] %(asctime)s: %(message)s',
         level=args.verbosity
