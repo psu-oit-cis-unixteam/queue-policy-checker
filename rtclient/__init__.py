@@ -3,6 +3,9 @@
 import logging
 import requests
 
+SEARCH_TIME = "%Y-%m-%d %H:%M:%S"
+TICKET_TIME = '%a %b %d %H:%M:%S %Y'
+
 def search(query, credentials, url):
     """Query RT via the API.
     query: the RTQL query

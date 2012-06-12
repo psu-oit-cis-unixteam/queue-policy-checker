@@ -8,8 +8,6 @@ from termcolor import colored
 
 import rtclient
 
-RT_SEARCH_TIME = "%Y-%m-%d %H:%M:%S"
-TICKET_TIME = '%a %b %d %H:%M:%S %Y'
 
 # constants for customer logic
 CUSTOMER = 0
@@ -40,7 +38,7 @@ class Ticket(object):
         # cast the time fields to usable types
         for timetype in ['updated', 'created']:
             time = getattr(self, timetype)
-            time = mktime(strptime(time, TICKET_TIME))
+            time = mktime(strptime(time, rtclient.TICKET_TIME))
             setattr(self, timetype, datetime.fromtimestamp(time))
 
         try:
