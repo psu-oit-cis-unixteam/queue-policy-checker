@@ -21,7 +21,7 @@ class Ticket(object):
                 'updated': 'needs checkin from customer or {0.queue} POC',
                 }
 
-    def __init__(self, ticket_id, creds, url, states):
+    def __init__(self, ticket_id, creds, url, states, teams):
         self.ticket_id = ticket_id
         self.ticket_dict = rtclient.get(ticket_id, creds, url)
         
@@ -34,6 +34,7 @@ class Ticket(object):
         self.owner   = self.ticket_dict['Owner']
         self.creds   = creds
         self.url     = url
+        self.teams   = teams
 
         # cast the time fields to usable types
         for timetype in ['updated', 'created']:
@@ -107,9 +108,18 @@ class Ticket(object):
             else:
                 meaningful_line = hist_lines[reverse_counter]
                 not_found = False
+
         #if the owner's name is in the non-empty line, then we are waiting on the customer
         if self.owner in meaningful_line:
             return CUSTOMER
+        #elif covers the case when there's no current owner, was the last person who touched
+        #ticket in the right team?
+        elif self.owner is 'Nobody':
+            teamname = self.teams.get_team(self.queue)
+            if self.teams.has_user(teamname, meaningful_line):
+                return CUSTOMER
+            else:
+                return STAFF
         #otherwise we're waiting on staff
         else:
             return STAFF
@@ -137,6 +147,7 @@ class Ticket(object):
                         status = colored("Waiting on Customer (ticket stalled) {1}: ",'yellow')
                     else:
                         status = colored("Ticket should be expired {1}: ",'grey')
+                #if we're not in stalled state, should we be?
                 else:
                     logging.info('self.age.days: %s', str(self.age.days))
                     if self.age.total_seconds() < self.speeds['slow']*60*60:
@@ -146,6 +157,6 @@ class Ticket(object):
             else: 
                 needs = colored('{0.needs}', 'magenta', attrs=['underline'])
                 status = colored("Overdue {1}: ", 'red')
-        
+
         msg = status + ticktxt + ' ' + needs
         return msg.format(*details)

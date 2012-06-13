@@ -33,3 +33,9 @@ states:
 skip_states:
     - resolved
     - rejected
+
+#if you want to default to looking for specific owners
+#enter them as follows; or on the same line: owners: <owner1>
+owners:
+    #- owner1
+    #- owner2
