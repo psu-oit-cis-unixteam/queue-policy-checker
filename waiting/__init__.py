@@ -26,15 +26,20 @@ class Ticket(object):
         self.ticket_dict = rtclient.get(ticket_id, creds, url)
         
         # copy the pertinent details up a level
-        self.created = self.ticket_dict['Created']
-        self.queue   = self.ticket_dict['Queue']
-        self.status  = self.ticket_dict['Status']
-        self.subject = self.ticket_dict['Subject']
-        self.updated = self.ticket_dict['LastUpdated']
-        self.owner   = self.ticket_dict['Owner']
-        self.creds   = creds
-        self.url     = url
-        self.teams   = teams
+        self.created   = self.ticket_dict['Created']
+        self.queue     = self.ticket_dict['Queue']
+        self.status    = self.ticket_dict['Status']
+        self.subject   = self.ticket_dict['Subject']
+        self.updated   = self.ticket_dict['LastUpdated']
+        self.owner     = self.ticket_dict['Owner']
+        self.requestor = self.ticket_dict['Requestors']
+        self.creds     = creds
+        self.url       = url
+        self.teams     = teams
+
+        logging.debug(
+                'requestor for the following ticket: {0}'.format(
+                    self.requestor)) #debug
 
         # cast the time fields to usable types
         for timetype in ['updated', 'created']:
@@ -147,6 +152,8 @@ class Ticket(object):
                         status = colored("Waiting on Customer (ticket stalled) {1}: ",'yellow')
                     else:
                         status = colored("Ticket should be expired {1}: ",'grey')
+                    if self.owner is self.requestor:
+                        status = colored("Requestor is owner. Ticket is stalled.",'green')
                 #if we're not in stalled state, should we be?
                 else:
                     logging.info('self.age.days: %s', str(self.age.days))
@@ -154,6 +161,8 @@ class Ticket(object):
                         status = colored("Waiting on Customer {1}: ",'blue')
                     else:
                         status = colored("Should be moved to 'stalled' status {1}: ",'cyan')
+                if self.owner is self.requestor:
+                    status = colored("Requestor is owner. Ticket is open.",'green')
             else: 
                 needs = colored('{0.needs}', 'magenta', attrs=['underline'])
                 status = colored("Overdue {1}: ", 'red')
