@@ -51,7 +51,7 @@ def check(param_path, who=False):
 
     #an error for no statuses in skip states
     if config['skip_states'] == None:
-        print 'Warning! No skip states indicated in config file.'
+        logging.critical('Warning! No skip states indicated in config file.')
         query['skip_states'] = ''
 
     else:
