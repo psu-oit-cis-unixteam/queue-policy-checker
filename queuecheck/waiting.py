@@ -26,13 +26,13 @@ class Ticket(object):
         self.ticket_dict = rtclient.get(ticket_id, creds, url)
         
         # copy the pertinent details up a level
-        self.created   = self.ticket_dict['Created']
-        self.queue     = self.ticket_dict['Queue']
-        self.status    = self.ticket_dict['Status']
-        self.subject   = self.ticket_dict['Subject']
-        self.updated   = self.ticket_dict['LastUpdated']
-        self.owner     = self.ticket_dict['Owner']
-        self.requestor = self.ticket_dict['Requestors']
+        self.created   = self.ticket_dict.get('Created')
+        self.queue     = self.ticket_dict.get('Queue')
+        self.status    = self.ticket_dict.get('Status')
+        self.subject   = self.ticket_dict.get('Subject')
+        self.updated   = self.ticket_dict.get('LastUpdated')
+        self.owner     = self.ticket_dict.get('Owner')
+        self.requestor = self.ticket_dict.get('Requestors')
         self.creds     = creds
         self.url       = url
         self.teams     = teams
