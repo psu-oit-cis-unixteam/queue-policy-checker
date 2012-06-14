@@ -21,11 +21,31 @@ class Ticket(object):
                 'updated': 'needs checkin from customer or {0.queue} POC',
                 }
 
+<<<<<<< HEAD
+    def __init__(self, ticket_id, creds, url, states, teams):
+=======
     def __init__(self, ticket_id, creds, url, states):
+>>>>>>> upstream/master
         self.ticket_id = ticket_id
         self.ticket_dict = rtclient.get(ticket_id, creds, url)
         
         # copy the pertinent details up a level
+<<<<<<< HEAD
+        self.created   = self.ticket_dict['Created']
+        self.queue     = self.ticket_dict['Queue']
+        self.status    = self.ticket_dict['Status']
+        self.subject   = self.ticket_dict['Subject']
+        self.updated   = self.ticket_dict['LastUpdated']
+        self.owner     = self.ticket_dict['Owner']
+        self.requestor = self.ticket_dict['Requestors']
+        self.creds     = creds
+        self.url       = url
+        self.teams     = teams
+
+        logging.debug(
+                'requestor for the following ticket: {0}'.format(
+                    self.requestor)) #debug
+=======
         self.created = self.ticket_dict['Created']
         self.queue   = self.ticket_dict['Queue']
         self.status  = self.ticket_dict['Status']
@@ -34,6 +54,7 @@ class Ticket(object):
         self.owner   = self.ticket_dict['Owner']
         self.creds   = creds
         self.url     = url
+>>>>>>> upstream/master
 
         # cast the time fields to usable types
         for timetype in ['updated', 'created']:
@@ -107,9 +128,24 @@ class Ticket(object):
             else:
                 meaningful_line = hist_lines[reverse_counter]
                 not_found = False
+<<<<<<< HEAD
+
         #if the owner's name is in the non-empty line, then we are waiting on the customer
         if self.owner in meaningful_line:
             return CUSTOMER
+        #elif covers the case when there's no current owner, was the last person who touched
+        #ticket in the right team?
+        elif self.owner is 'Nobody':
+            teamname = self.teams.get_team(self.queue)
+            if self.teams.has_user(teamname, meaningful_line):
+                return CUSTOMER
+            else:
+                return STAFF
+=======
+        #if the owner's name is in the non-empty line, then we are waiting on the customer
+        if self.owner in meaningful_line:
+            return CUSTOMER
+>>>>>>> upstream/master
         #otherwise we're waiting on staff
         else:
             return STAFF
@@ -137,15 +173,30 @@ class Ticket(object):
                         status = colored("Waiting on Customer (ticket stalled) {1}: ",'yellow')
                     else:
                         status = colored("Ticket should be expired {1}: ",'grey')
+<<<<<<< HEAD
+                    if self.owner is self.requestor:
+                        status = colored("Requestor is owner. Ticket is stalled.",'green')
+                #if we're not in stalled state, should we be?
+=======
+>>>>>>> upstream/master
                 else:
                     logging.info('self.age.days: %s', str(self.age.days))
                     if self.age.total_seconds() < self.speeds['slow']*60*60:
                         status = colored("Waiting on Customer {1}: ",'blue')
                     else:
                         status = colored("Should be moved to 'stalled' status {1}: ",'cyan')
+<<<<<<< HEAD
+                if self.owner is self.requestor:
+                    status = colored("Requestor is owner. Ticket is open.",'green')
+            else: 
+                needs = colored('{0.needs}', 'magenta', attrs=['underline'])
+                status = colored("Overdue {1}: ", 'red')
+
+=======
             else: 
                 needs = colored('{0.needs}', 'magenta', attrs=['underline'])
                 status = colored("Overdue {1}: ", 'red')
         
+>>>>>>> upstream/master
         msg = status + ticktxt + ' ' + needs
         return msg.format(*details)
