@@ -70,12 +70,16 @@ def check(param_path, who=False):
         query = query[:query.index('()')].append(query[(query.index('()')+2):])
 
     logging.info('Running query: %s', query)
+<<<<<<< HEAD
 
     teams_object = teams.Teams(config['teams'])
+=======
+>>>>>>> upstream/master
 
     for ticket in rtclient.search(query, config['creds'], config['url']):
         logging.info('Got ticket=%s subject="%s"', *ticket)
         ticket_n, _ = ticket
+<<<<<<< HEAD
         #aticket = waiting.Ticket(ticket_n, config['creds'], config['url'], config['states'], config['teams'])
         aticket = waiting.Ticket(
                 ticket_n,
@@ -83,6 +87,9 @@ def check(param_path, who=False):
                 config['url'],
                 config['states'],
                 teams_object)
+=======
+        aticket = waiting.Ticket(ticket_n, config['creds'], config['url'], config['states'])
+>>>>>>> upstream/master
         ticket_health = aticket.health()
         if ticket_health:
             print ticket_health
