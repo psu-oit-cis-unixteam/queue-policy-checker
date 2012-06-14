@@ -39,3 +39,29 @@ skip_states:
 owners:
     #- owner1
     #- owner2
+
+#teams has subentries for each team and then
+#the uids of the team members
+teams:
+    cis-unix:
+        - maxp
+        - ade
+        - elliot
+        - wcooley
+        - gdriggs
+    cis-io:
+        - tudor
+        - lepi
+        - aevannoff
+        - staplej
+        - fetter
+    cis-admin:
+        - bass
+        - wcooley
+        - cowlthr
+        - aevannoff
+    cis-windows:
+        - cowlthr
+        - tcl
+        - sheree
+        - rhetts
