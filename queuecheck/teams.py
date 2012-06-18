@@ -3,6 +3,7 @@
 class Teams(object):
     '''teams class will hold the different teams as a dict
     and it will process text for team member names'''
+
     def __init__(self, teams_dict):
         '''init method takes the teams dict from the yaml'''
         self.teams_dict = teams_dict
