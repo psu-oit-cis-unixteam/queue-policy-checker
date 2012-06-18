@@ -8,14 +8,12 @@ from termcolor import colored
 
 import rtclient
 
-
 # constants for customer logic
 CUSTOMER = 0
 STAFF    = 1
 
 class Ticket(object):
     """Describes a ticket and it's freshness"""
-
     adj2needs = {
                 'created': 'needs update from {0.queue} POC',
                 'updated': 'needs checkin from customer or {0.queue} POC',
