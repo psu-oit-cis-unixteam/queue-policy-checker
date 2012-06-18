@@ -84,11 +84,14 @@ def check(param_path, who=False):
                     config['creds'], 
                     config['url'], 
                     batch_size)
-            #logging.critical('batch_tickets:\n{0}'.format(batch_tickets)) #debug
+            #logging.critical(
+            #   'batch_tickets:\n{0}'.format(batch_tickets)) #debug
 
             batch_waiting = waiting.waiting_n(batch_tickets, config['creds'], 
-                    config['url'], config['states'], config['teams'], batch_size)
-            #logging.critical('batch_waiting:\n{0}'.format(batch_waiting)) #debug
+                    config['url'], config['states'], 
+                    config['teams'], batch_size)
+            #logging.critical(
+            #   'batch_waiting:\n{0}'.format(batch_waiting)) #debug
 
             batch_health  = waiting.health_n(batch_tickets, config['creds'], 
                     config['url'], 
