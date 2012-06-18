@@ -22,5 +22,3 @@ Roadmap
 =======
 - indicating when tickets should be closed
 - factoring of presentation away from central classes
-- increased speed (the post-search phase should be modified to use grequests to
-  fetch all ticket details in parallel
