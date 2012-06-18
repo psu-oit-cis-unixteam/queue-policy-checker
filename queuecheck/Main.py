@@ -80,7 +80,10 @@ def check(param_path, who=False):
         my_tickets.append(ticket)
         if len(my_tickets) >= batch_size:
 
-            batch_tickets = rtclient.get_n(my_tickets, config['creds'], config['url'], batch_size)
+            batch_tickets = rtclient.get_n(my_tickets, 
+                    config['creds'], 
+                    config['url'], 
+                    batch_size)
             #logging.critical('batch_tickets:\n{0}'.format(batch_tickets)) #debug
 
             batch_waiting = waiting.waiting_n(batch_tickets, config['creds'], 
@@ -88,14 +91,20 @@ def check(param_path, who=False):
             #logging.critical('batch_waiting:\n{0}'.format(batch_waiting)) #debug
 
             batch_health  = waiting.health_n(batch_tickets, config['creds'], 
-                    config['url'], config['states'], config['teams'], batch_waiting, batch_size)
+                    config['url'], 
+                    config['states'], 
+                    config['teams'], 
+                    batch_waiting, 
+                    batch_size)
             #logging.critical('batch_health:\n{0}'.format(batch_health)) #debug
 
             #for health in batch_health:
             #    print health
 
             #for _ticket in batch_tickets:
-            #    #logging.debug( 'str(int(_ticket[\'id\'].split(\'/\')[1])): {0}'.format(str(int(_ticket['id'].split('/')[1]))) ) #debug
+            #    #logging.debug( 'str(int(
+            #       _ticket[\'id\'].split(\'/\')[1])): {0}'.format(
+            #           str(int(_ticket['id'].split('/')[1]))) ) #debug
             #    #ticket_number = int(_ticket['id'].split('/')[1])
             #    #aticket = waiting.Ticket(
             #    #        ticket_number,
@@ -122,7 +131,7 @@ def check(param_path, who=False):
         #    print ticket_health
     endtime = waiting.datetime.now()
     total_time = endtime - starttime
-    print 'total time: '+waiting.strfdelta( total_time, "{minutes}:{seconds}" )
+    print 'total time: '+waiting.strfdelta(total_time, "{minutes}:{seconds}")
 
 class Main():
     def __call__(self):
@@ -143,10 +152,11 @@ class Main():
         who = parser.add_mutually_exclusive_group()
 #        who.add_argument('--everyone', dest='who', action='store_false',
 #            help='Check tickets owned by everyone.')
-        who.add_argument('--me', dest='who', action='store_const', const=getuser(),
-            help='Check tickets owned by %(const)s')
-        who.add_argument('--who', dest='who', action='store', default='Nobody',
-            help='Examine tickets owned by someone, default: %(default)s')
+        who.add_argument('--me', dest='who', action='store_const', 
+                const=getuser(), help='Check tickets owned by %(const)s')
+        who.add_argument('--who', dest='who', action='store', 
+                default='Nobody', 
+                help='Examine tickets owned by someone, default: %(default)s')
 
         args = parser.parse_args()
 
