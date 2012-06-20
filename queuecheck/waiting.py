@@ -60,6 +60,7 @@ def health_n(tickets, states, waitings):
     for ticket in tickets:
         updated = datetime.fromtimestamp(mktime(strptime(ticket['LastUpdated'],
             rtclient.TICKET_TIME)))
+	#maybe created will be used in the future?
         #created = datetime.fromtimestamp(mktime(strptime(ticket['Created'],
         #    rtclient.TICKET_TIME)))
 

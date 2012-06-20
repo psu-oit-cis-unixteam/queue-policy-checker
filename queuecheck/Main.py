@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 '''this is the main method, starting point for the check-queue operation'''
 import argparse
 import logging
@@ -87,20 +88,20 @@ def check(param_path, who=False):
                     config['creds'], 
                     config['url'])
 
-            #logging.debug('batch_tickets:\n{0}'.format(batch_tickets)) #debug
+            logging.debug('batch_tickets:\n{0}'.format(batch_tickets)) #debug
 
             batch_waiting = waiting.waiting_n(
                     batch_tickets, batch_histories,
                     config['teams'])
 
-            #logging.debug('batch_waiting:\n{0}'.format(batch_waiting)) #debug
+            logging.debug('batch_waiting:\n{0}'.format(batch_waiting)) #debug
 
             batch_health  = waiting.health_n(
                     batch_tickets,
                     config['states'], 
                     batch_waiting)
 
-            #logging.debug('batch_health:\n{0}'.format(batch_health))#debug
+            logging.debug('batch_health:\n{0}'.format(batch_health))#debug
 
             for health in batch_health:
                 print health
