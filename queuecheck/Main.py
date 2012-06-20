@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+'''this is the main method, starting point for the check-queue operation'''
 import argparse
 import logging
 import yaml
@@ -25,6 +25,7 @@ def check(param_path, who=False):
     # build the owner constraints. Command line supercedes conf file
     if who:
         query['who'] = 'Owner = "{}" and '.format(who)
+
     #otherwise, it will go to the conf and look for 'owner'
     else:
         #check if present and not empty in conf
@@ -63,20 +64,21 @@ def check(param_path, who=False):
     # get all tickets with applicable statuses from all applicable queues
     query = "{who} ({queue}) and ({skip_states})".format(**query)
     
-    # make sure to always have a valid query
+    # make sure to always have a valid query, aka get rid of empty parens
     if ' and ()' in query:
         query = query[:-7]
     if '()' in query:
-        query = query[:query.index('()')].append(query[(query.index('()')+2):])
+        query = query[:query.index('()')].append(
+            query[(query.index('()')+2):])
 
     logging.info('Running query: %s', query)
-
-    teams_object = teams.Teams(config['teams'])
 
     my_tickets = []
     batch_size = 5
 
-    for ticket in rtclient.search(query, config['creds'], config['url']):
+    for ticket in rtclient.search(
+        query, config['creds'], config['url']):
+
         my_tickets.append(ticket)
         if len(my_tickets) >= batch_size:
 
@@ -85,25 +87,20 @@ def check(param_path, who=False):
                     config['creds'], 
                     config['url'])
 
-            #   'batch_tickets:\n{0}'.format(batch_tickets)) #debug
+            #logging.debug('batch_tickets:\n{0}'.format(batch_tickets)) #debug
 
             batch_waiting = waiting.waiting_n(
-                    batch_tickets, batch_histories, 
-                    config['creds'], config['url'], 
-                    config['states'], config['teams'], 
-                    batch_size)
-            #logging.critical(
-            #   'batch_waiting:\n{0}'.format(batch_waiting)) #debug
+                    batch_tickets, batch_histories,
+                    config['teams'])
+
+            #logging.debug('batch_waiting:\n{0}'.format(batch_waiting)) #debug
 
             batch_health  = waiting.health_n(
                     batch_tickets,
-                    config['creds'], 
-                    config['url'], 
                     config['states'], 
-                    config['teams'], 
-                    batch_waiting, 
-                    batch_size)
-            #logging.critical('batch_health:\n{0}'.format(batch_health)) #debug
+                    batch_waiting)
+
+            #logging.debug('batch_health:\n{0}'.format(batch_health))#debug
 
             for health in batch_health:
                 print health
@@ -112,9 +109,12 @@ def check(param_path, who=False):
 
     endtime = waiting.datetime.now()
     total_time = endtime - starttime
-    logging.debug('total time: '+waiting.strfdelta(total_time, "{minutes}:{seconds}"))
+
+    logging.info(
+        'total time: '+waiting.strfdelta(total_time, "{minutes}:{seconds}"))
 
 class Main():
+    '''the main method for running the script'''
     def __call__(self):
         """Parse args and initiate a check."""
         parser = argparse.ArgumentParser(description=__doc__)
