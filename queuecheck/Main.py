@@ -80,20 +80,24 @@ def check(param_path, who=False):
         my_tickets.append(ticket)
         if len(my_tickets) >= batch_size:
 
-            batch_tickets = rtclient.get_n(my_tickets, 
+            batch_tickets, batch_histories = rtclient.get_n(
+                    my_tickets, 
                     config['creds'], 
-                    config['url'], 
-                    batch_size)
-            #logging.critical(
+                    config['url'])
+
             #   'batch_tickets:\n{0}'.format(batch_tickets)) #debug
 
-            batch_waiting = waiting.waiting_n(batch_tickets, config['creds'], 
-                    config['url'], config['states'], 
-                    config['teams'], batch_size)
+            batch_waiting = waiting.waiting_n(
+                    batch_tickets, batch_histories, 
+                    config['creds'], config['url'], 
+                    config['states'], config['teams'], 
+                    batch_size)
             #logging.critical(
             #   'batch_waiting:\n{0}'.format(batch_waiting)) #debug
 
-            batch_health  = waiting.health_n(batch_tickets, config['creds'], 
+            batch_health  = waiting.health_n(
+                    batch_tickets,
+                    config['creds'], 
                     config['url'], 
                     config['states'], 
                     config['teams'], 
@@ -101,40 +105,14 @@ def check(param_path, who=False):
                     batch_size)
             #logging.critical('batch_health:\n{0}'.format(batch_health)) #debug
 
-            #for health in batch_health:
-            #    print health
+            for health in batch_health:
+                print health
 
-            #for _ticket in batch_tickets:
-            #    #logging.debug( 'str(int(
-            #       _ticket[\'id\'].split(\'/\')[1])): {0}'.format(
-            #           str(int(_ticket['id'].split('/')[1]))) ) #debug
-            #    #ticket_number = int(_ticket['id'].split('/')[1])
-            #    #aticket = waiting.Ticket(
-            #    #        ticket_number,
-            #    #        config['creds'],
-            #    #        config['url'],
-            #    #        config['states'],
-            #    #        teams_object)
-            #    #ticket_health = aticket.health()
-            #    #if ticket_health:
-            #    #    pass
-            #    #    #print ticket_health
             my_tickets = list()
-            #print 'just did a batch'
-        #logging.info('Got ticket=%s subject="%s"', *ticket)
-        #ticket_n, _ = ticket
-        #aticket = waiting.Ticket(
-        #        ticket_n,
-        #        config['creds'],
-        #        config['url'],
-        #        config['states'],
-        #        teams_object)
-        #ticket_health = aticket.health()
-        #if ticket_health:
-        #    print ticket_health
+
     endtime = waiting.datetime.now()
     total_time = endtime - starttime
-    print 'total time: '+waiting.strfdelta(total_time, "{minutes}:{seconds}")
+    logging.debug('total time: '+waiting.strfdelta(total_time, "{minutes}:{seconds}"))
 
 class Main():
     def __call__(self):

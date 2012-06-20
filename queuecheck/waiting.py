@@ -160,11 +160,17 @@ class Ticket(object):
         msg = status + ticktxt + ' ' + needs
         return msg.format(*details)
 
-def waiting_n(tickets, creds, url, states, teams, batch_size):
+def waiting_n(tickets, histories, creds, url, states, teams, batch_size):
     '''batch processing for finding who tickets are waiting on'''
     logging.debug("waiting_n:\ntickets:\n{0}".format(tickets)) #debug
 
-    histories, owners, queues = rtclient.history_n(tickets, creds, url, batch_size)
+    #histories, owners, queues = rtclient.history_n(tickets, creds, url, batch_size)
+    owners = []
+    queues = []
+    for ticket in tickets:
+	#print 'ticket: ' + str(ticket) #debug
+        owners.append(ticket["Owner"])
+        queues.append(ticket["Queue"])
     waiting = []
 
     logging.debug("owners:\n{0}".format(owners)) #debug
